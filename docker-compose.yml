@@ -69,6 +69,7 @@ services:
       AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
       AIRFLOW__CORE__LOAD_EXAMPLES: "false"
       AIRFLOW__WEBSERVER__SECRET_KEY: dev-secret-change-in-prod
+      AIRFLOW__CORE__SIMPLE_AUTH_MANAGER_ALL_ADMINS: "True"
       OPENSKY_CLIENT_ID: ${OPENSKY_CLIENT_ID}
       OPENSKY_CLIENT_SECRET: ${OPENSKY_CLIENT_SECRET}
       AWS_ACCESS_KEY_ID: minioadmin
@@ -79,7 +80,7 @@ services:
       - ./airflow/plugins:/opt/airflow/plugins
     ports:
       - "8080:8080"
-    command: webserver
+    command: api-server
 
   airflow-scheduler:
     build:
