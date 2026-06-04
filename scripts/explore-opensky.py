@@ -1,10 +1,16 @@
 import httpx
 from opensky_pipeline.config import settings
+from opensky_pipeline.logging import configure_logging, get_logger
+
+logger = get_logger(__name__)
 
 
 def main() -> None:
-    # Krok 1 - pobierz token
-    print("Pobieram token...")
+    configure_logging()
+    logger.info("Starting OpenSky exploration")
+
+    # step 1 - get token
+    logger.info("Fetching token")
     response = httpx.post(
         settings.opensky_token_url,
         data={
@@ -13,15 +19,19 @@ def main() -> None:
             "client_secret": settings.opensky_client_secret,
         },
     )
-    print(f"Status: {response.status_code}")
 
     token_data = response.json()
     token = token_data["access_token"]
-    print(f"Token (pierwsze 30 znaków): {token[:30]}...")
-    print(f"Wygasa za: {token_data['expires_in']} sekund")
+    logger.info("Token fetched", expires_in=token_data["expires_in"])
 
-    # Krok 2 - zapytaj o samoloty nad Europą Centralną
-    print("\nPobieram samoloty...")
+    # step 2 - fetch aircraft
+    logger.info(
+        "Fetching state vectors",
+        bbox={
+            "lamin": settings.bbox_lamin,
+            "lamax": settings.bbox_lamax,
+        },
+    )
     states_response = httpx.get(
         f"{settings.opensky_api_url}/states/all",
         params={
@@ -32,19 +42,22 @@ def main() -> None:
         },
         headers={"Authorization": f"Bearer {token}"},
     )
-    print(f"Status: {states_response.status_code}")
 
     data = states_response.json()
     states = data.get("states", [])
-    print(f"Liczba samolotów: {len(states)}")
+    logger.info("State vectors fetched", count=len(states))
 
-    # Pokaż pierwsze 3 rekordy
-    print("\nPierwsze 3 samoloty:")
+    # show first 3
     for state in states[:3]:
-        print(
-            f"  ICAO24: {state[0]}, Callsign: {state[1]}, "
-            f"Kraj: {state[2]}, Lon: {state[5]}, Lat: {state[6]}, "
-            f"Wysokość: {state[7]}m, Na ziemi: {state[8]}"
+        logger.info(
+            "Sample aircraft",
+            icao24=state[0],
+            callsign=state[1],
+            country=state[2],
+            longitude=state[5],
+            latitude=state[6],
+            altitude=state[7],
+            on_ground=state[8],
         )
 
 
